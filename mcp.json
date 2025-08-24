@@ -6,10 +6,10 @@
             "-y",
             "@supabase/mcp-server-supabase@latest",
             "--read-only",
-            "--project-ref=vfoyusdsmpnnqrsayeqb"
+            "--project-ref=${SUPABASE_PROJECT_REF}"
           ],
           "env": {
-            "SUPABASE_ACCESS_TOKEN": "sbp_e02b814d34962141056ed80266769fb0aa227360"
+            "SUPABASE_ACCESS_TOKEN": "${SUPABASE_ACCESS_TOKEN}"
           }
         },
   "filesystem": {
@@ -17,8 +17,8 @@
      "args": [
       "-y",
       "@modelcontextprotocol/server-filesystem",
-      "/Users/sindhu/Downloads/2025q2",
-      "/Users/sindhu/Downloads/2025q1"
+      "Users/<username>/Downloads/<foldername-1>",
+      "Users/<username>/Downloads/<foldername-2>"
     ]
    }
  }

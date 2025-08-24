@@ -21,16 +21,31 @@ from mcp.client.stdio import stdio_client  # MCP client for standard I/O communi
 from mcp.client.session import ClientSession  # MCP session management
 
 # ========= BASIC CONFIG =========
+# Load environment variables from .env file if available
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Try to load environment variables from .env file
+env_path = Path(__file__).parent.parent / ".env"
+if env_path.exists():
+    load_dotenv(dotenv_path=env_path)
+
 # AWS credentials and region configuration
-AWS_PROFILE = "account-sindhu"  # AWS profile to use for authentication
-AWS_REGION  = "us-east-1"      # AWS region for Bedrock service
+AWS_PROFILE = os.environ.get("AWS_PROFILE", "default")  # AWS profile to use for authentication
+AWS_REGION = os.environ.get("AWS_REGION", "us-east-1")  # AWS region for Bedrock service
 
 # Root directories that the filesystem server will have access to
 # These directories will be accessible to the Bedrock agent
-FILESYSTEM_DIRS = [
-    "/Users/sindhu/Downloads/2025q2",
-    "/Users/sindhu/Downloads/2025q1",
-]
+filesystem_dirs_str = os.environ.get("FILESYSTEM_DIRS", "")
+FILESYSTEM_DIRS = [dir.strip() for dir in filesystem_dirs_str.split(",") if dir.strip()]
+
+# Fallback to default directories if not specified in environment
+if not FILESYSTEM_DIRS:
+    # Replace these with safe example paths in your home directory
+    FILESYSTEM_DIRS = [
+        os.path.join(os.path.expanduser("~"), "Documents"),
+    ]
 
 # Action group OpenAPI (operationId) names used in your Bedrock schema
 # Maps REST API paths to operation IDs defined in the OpenAPI schema
