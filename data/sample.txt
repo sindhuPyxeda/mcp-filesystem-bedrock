@@ -1,0 +1,2 @@
+This is a sample file to demonstrate the MCP filesystem client.
+You can read, write, and manipulate files through the API.

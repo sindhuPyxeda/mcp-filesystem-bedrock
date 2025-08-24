@@ -1,0 +1,249 @@
+{
+    "openapi": "3.0.1",
+    "info": {
+      "title": "Filesystem Adapter",
+      "version": "1.0.0",
+      "description": "HTTP-like facade for a local filesystem MCP server. All paths must be under the server's allowed directories."
+    },
+    "servers": [
+      { "url": "https://YOUR-FILESERVICE-BASE-URL" }
+    ],
+    "paths": {
+      "/fs/allowed-roots": {
+        "description": "Return the list of directories that the server allows access to.",
+        "get": {
+          "operationId": "listAllowedDirectories",
+          "description": "List allowed directories (roots).",
+          "responses": {
+            "200": {
+              "description": "Allowed roots returned.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": { "roots": { "type": "array", "items": { "type": "string" } } },
+                    "required": ["roots"]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+  
+      "/fs/info": {
+        "description": "Return metadata (type, size, timestamps, permissions) for a single path.",
+        "get": {
+          "operationId": "getFileInfo",
+          "description": "Get file or directory metadata.",
+          "parameters": [
+            {
+              "name": "path",
+              "in": "query",
+              "required": true,
+              "description": "Absolute path to a file or directory (must be under an allowed directory). Example: /Users/sindhu/Downloads/2025q1/sub.txt",
+              "schema": { "type": "string" },
+              "example": "/Users/sindhu/Downloads/2025q1/sub.txt"
+            }
+          ],
+          "responses": {
+            "200": { "description": "Metadata returned." },
+            "404": { "description": "Path not found." },
+            "400": { "description": "Bad request." }
+          }
+        }
+      },
+  
+      "/fs/list": {
+        "description": "Return entries in a directory; supports recursion, glob filter, and optional sizes.",
+        "get": {
+          "operationId": "listDirectory",
+          "description": "List directory contents.",
+          "parameters": [
+            {
+              "name": "path",
+              "in": "query",
+              "required": true,
+              "description": "Absolute directory path to list (must be under an allowed directory).",
+              "schema": { "type": "string" },
+              "example": "/Users/sindhu/Downloads/2025q1"
+            },
+            { "name": "recursive", "in": "query", "required": false, "description": "If true, include subdirectories recursively.", "schema": { "type": "boolean", "default": false } },
+            { "name": "glob", "in": "query", "required": false, "description": "Optional glob pattern to filter results (e.g., **/*.txt).", "schema": { "type": "string" } },
+            { "name": "includeSizes", "in": "query", "required": false, "description": "If true, include file sizes.", "schema": { "type": "boolean", "default": false } },
+            { "name": "limit", "in": "query", "required": false, "description": "Maximum number of entries to return.", "schema": { "type": "integer", "minimum": 1, "maximum": 10000 } }
+          ],
+          "responses": {
+            "200": { "description": "Entries returned." },
+            "400": { "description": "Bad request." }
+          }
+        }
+      },
+  
+      "/fs/read": {
+        "description": "Read a file either as text or as media (base64).",
+        "get": {
+          "operationId": "readFile",
+          "description": "Read a file.",
+          "parameters": [
+            { "name": "path", "in": "query", "required": true, "description": "Absolute file path (must be allowed).", "schema": { "type": "string" } },
+            { "name": "mode", "in": "query", "required": false, "description": "Read mode: text or media.", "schema": { "type": "string", "enum": ["text", "media"], "default": "text" } },
+            { "name": "head", "in": "query", "required": false, "description": "For text mode: first N lines.", "schema": { "type": "integer", "minimum": 1 } },
+            { "name": "tail", "in": "query", "required": false, "description": "For text mode: last N lines.", "schema": { "type": "integer", "minimum": 1 } }
+          ],
+          "responses": {
+            "200": { "description": "File content returned." },
+            "404": { "description": "File not found." },
+            "400": { "description": "Bad request." }
+          }
+        }
+      },
+  
+      "/fs/search": {
+        "description": "Search by plain text or regex across files under a root path.",
+        "get": {
+          "operationId": "searchFiles",
+          "description": "Search files.",
+          "parameters": [
+            { "name": "path", "in": "query", "required": true, "description": "Root directory to search.", "schema": { "type": "string" }, "example": "/Users/sindhu/Downloads/2025q1" },
+            { "name": "pattern", "in": "query", "required": true, "description": "Search term (plain text unless regex=true).", "schema": { "type": "string" } },
+            { "name": "regex", "in": "query", "required": false, "description": "If true, interpret 'pattern' as a regular expression.", "schema": { "type": "boolean", "default": false } },
+            { "name": "caseSensitive", "in": "query", "required": false, "description": "If true, case-sensitive match.", "schema": { "type": "boolean", "default": false } },
+            { "name": "maxResults", "in": "query", "required": false, "description": "Maximum matches to return.", "schema": { "type": "integer", "minimum": 1, "maximum": 10000 } }
+          ],
+          "responses": {
+            "200": { "description": "Matches returned." },
+            "400": { "description": "Bad request." }
+          }
+        }
+      },
+  
+      "/fs/write": {
+        "description": "Create or overwrite a file with text/base64 content.",
+        "post": {
+          "operationId": "writeFile",
+          "description": "Write file.",
+          "requestBody": {
+            "required": true,
+            "description": "Destination path and content.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "path": { "type": "string", "description": "Destination file path." },
+                    "content": { "type": "string", "description": "Content (text or base64)." },
+                    "encoding": { "type": "string", "enum": ["utf-8", "base64"], "description": "Interpretation of content.", "default": "utf-8" },
+                    "overwrite": { "type": "boolean", "description": "If true, allow overwriting.", "default": true }
+                  },
+                  "required": ["path", "content"]
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": { "description": "Write success." },
+            "400": { "description": "Bad request." }
+          }
+        }
+      },
+  
+      "/fs/edit": {
+        "description": "Replace line ranges with new text and return a diff.",
+        "post": {
+          "operationId": "editFile",
+          "description": "Edit file (line-based).",
+          "requestBody": {
+            "required": true,
+            "description": "Edits to apply.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "path": { "type": "string", "description": "Target text file path." },
+                    "edits": {
+                      "type": "array",
+                      "description": "Each edit replaces lines [startLine, endLine] (1-based, inclusive) with replacementText.",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "startLine": { "type": "integer", "minimum": 1, "description": "Start line (1-based)." },
+                          "endLine": { "type": "integer", "minimum": 1, "description": "End line (inclusive)." },
+                          "replacementText": { "type": "string", "description": "New text for that range." }
+                        },
+                        "required": ["startLine", "endLine", "replacementText"]
+                      }
+                    }
+                  },
+                  "required": ["path", "edits"]
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": { "description": "Diff returned." },
+            "400": { "description": "Bad request." }
+          }
+        }
+      },
+  
+      "/fs/move": {
+        "description": "Move or rename a file/directory; optional overwrite.",
+        "post": {
+          "operationId": "moveFile",
+          "description": "Move/rename.",
+          "requestBody": {
+            "required": true,
+            "description": "Source and destination.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "src": { "type": "string", "description": "Source path (must exist)." },
+                    "dest": { "type": "string", "description": "Destination path." },
+                    "overwrite": { "type": "boolean", "description": "If true, allow replacing destination.", "default": false }
+                  },
+                  "required": ["src", "dest"]
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": { "description": "Move completed." },
+            "400": { "description": "Bad request." }
+          }
+        }
+      },
+  
+      "/fs/create-directory": {
+        "description": "Create a directory (parents OK). Succeeds if it already exists.",
+        "post": {
+          "operationId": "createDirectory",
+          "description": "Create directory.",
+          "requestBody": {
+            "required": true,
+            "description": "Directory to create.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "path": { "type": "string", "description": "Directory path to create." },
+                    "parents": { "type": "boolean", "description": "If true, create missing parents.", "default": true }
+                  },
+                  "required": ["path"]
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": { "description": "Directory created or already existed." },
+            "400": { "description": "Bad request." }
+          }
+        }
+      }
+    }
+  }
+  
